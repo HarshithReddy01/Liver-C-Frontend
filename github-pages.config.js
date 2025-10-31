@@ -1,7 +1,7 @@
 // GitHub Pages Configuration for Liver-Cirrosis
 export const githubPagesConfig = {
   // Base URL for GitHub Pages
-  BASE_URL: '/Liver-Cirrosis',
+  BASE_URL: '/Liver-C-Frontend',
   
   // Backend API Configuration (Deployed)
   BACKEND_API_URL: 'https://map.paninsight.org',
