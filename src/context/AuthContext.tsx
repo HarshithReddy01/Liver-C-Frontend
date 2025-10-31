@@ -36,10 +36,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        } catch (error) {
+          console.error('Error parsing stored user data:', error);
+          localStorage.removeItem('user');
+        }
+      }
+      
+      setLoading(false);
+      
       try {
         const response = await fetch('https://map.paninsight.org/api/auth/check-auth', {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          mode: 'cors'
         });
         
         if (response.ok) {
@@ -48,30 +62,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(data.data);
             localStorage.setItem('user', JSON.stringify(data.data));
           } else {
-            
             setUser(null);
             localStorage.removeItem('user');
           }
         } else {
-          
           setUser(null);
           localStorage.removeItem('user');
         }
       } catch (error) {
-        console.error('Auth check error:', error);
-        
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const userData = JSON.parse(storedUser);
-            setUser(userData);
-          } catch (error) {
-            console.error('Error parsing stored user data:', error);
-            localStorage.removeItem('user');
-          }
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          console.warn('Auth check failed (likely CORS). Using cached data if available.');
+        } else {
+          console.error('Auth check error:', error);
+        }
+        if (!storedUser) {
+          setUser(null);
         }
       }
-      setLoading(false);
     };
 
     checkAuthStatus();
