@@ -91,7 +91,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter basename="/Liver-Cirrosis">
+            <BrowserRouter basename="/Liver-C-Frontend">
               <AppContent />
             </BrowserRouter>
           </TooltipProvider>
