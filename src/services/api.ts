@@ -61,11 +61,16 @@ export async function segmentLiver(request: SegmentationRequest): Promise<Segmen
       body: formData,
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const data: SegmentationResponse = await response.json();
+    
+    if (!response.ok || !data.success) {
+      const errorMsg = data.error || `HTTP error! status: ${response.status}`;
+      return {
+        success: false,
+        error: errorMsg,
+      };
     }
 
-    const data: SegmentationResponse = await response.json();
     return data;
   } catch (error) {
     return {
