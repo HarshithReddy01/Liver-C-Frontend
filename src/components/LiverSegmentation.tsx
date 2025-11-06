@@ -1,4 +1,29 @@
 import React, { useState } from 'react';
+import { 
+  Box, 
+  Container, 
+  Typography, 
+  Button, 
+  Paper, 
+  Grid, 
+  CircularProgress,
+  Alert,
+  Card,
+  CardContent,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  Stack
+} from '@mui/material';
+import { 
+  CloudUpload, 
+  Download, 
+  Assessment, 
+  Image as ImageIcon,
+  Science
+} from '@mui/icons-material';
 import { segmentLiver, downloadBase64File, SegmentationResponse } from '../services/api';
 
 export function LiverSegmentation() {
@@ -7,12 +32,14 @@ export function LiverSegmentation() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SegmentationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setFile(event.target.files[0]);
       setResult(null);
       setError(null);
+      setShowReport(false);
     }
   };
 
@@ -25,6 +52,7 @@ export function LiverSegmentation() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setShowReport(false);
 
     try {
       const response = await segmentLiver({ file, modality });
@@ -46,202 +74,342 @@ export function LiverSegmentation() {
     }
   };
 
+  const handleGenerateReport = () => {
+    setShowReport(true);
+  };
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'normal':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'mild':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       case 'moderate':
-        return 'bg-orange-100 text-orange-800';
+        return 'error';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'default';
     }
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6 max-w-6xl">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-3xl font-bold mb-2">Liver Segmentation</h1>
-        <p className="text-gray-600 mb-6">Upload a 3D NIfTI MRI volume for automatic liver segmentation</p>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
+          Liver Segmentation
+        </Typography>
+        <Typography variant="body1" color="text.secondary" paragraph>
+          Upload a 3D NIfTI MRI volume for automatic liver segmentation
+        </Typography>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">NIfTI File (.nii.gz or .nii)</label>
-            <input
-              type="file"
-              accept=".nii,.nii.gz"
-              onChange={handleFileChange}
-              disabled={loading}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
-          </div>
+        <Box sx={{ mt: 3, space: 2 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  NIfTI File (.nii.gz or .nii)
+                </Typography>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  startIcon={<CloudUpload />}
+                  fullWidth
+                  disabled={loading}
+                  sx={{ py: 1.5 }}
+                >
+                  {file ? file.name : 'Choose File'}
+                  <input
+                    type="file"
+                    accept=".nii,.nii.gz"
+                    onChange={handleFileChange}
+                    hidden
+                  />
+                </Button>
+              </Box>
+            </Grid>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">MRI Modality</label>
-            <select
-              value={modality}
-              onChange={(e) => setModality(e.target.value as 'T1' | 'T2')}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="T1">T1-weighted</option>
-              <option value="T2">T2-weighted</option>
-            </select>
-          </div>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  MRI Modality
+                </Typography>
+                <Box
+                  component="select"
+                  value={modality}
+                  onChange={(e) => setModality(e.target.value as 'T1' | 'T2')}
+                  disabled={loading}
+                  sx={{
+                    width: '100%',
+                    p: 1.5,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    fontSize: '1rem',
+                    fontFamily: 'inherit',
+                    '&:focus': {
+                      outline: '2px solid',
+                      outlineColor: 'primary.main',
+                      outlineOffset: 2
+                    }
+                  }}
+                >
+                  <option value="T1">T1-weighted</option>
+                  <option value="T2">T2-weighted</option>
+                </Box>
+              </Box>
+            </Grid>
+          </Grid>
 
-          <button
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
             onClick={handleSegment}
             disabled={!file || loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Science />}
+            sx={{ mt: 2, py: 1.5 }}
           >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              'Segment Liver'
-            )}
-          </button>
+            {loading ? 'Processing...' : 'Segment Liver'}
+          </Button>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+            <Alert severity="error" sx={{ mt: 2 }}>
               {error}
-            </div>
+            </Alert>
           )}
-        </div>
-      </div>
+        </Box>
+      </Paper>
 
       {result?.success && result.overlay_image && (
         <>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-4">Segmentation Overlay</h2>
-            <img
+          <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
+            <Typography variant="h5" component="h2" gutterBottom fontWeight="bold">
+              Segmentation Overlay
+            </Typography>
+            <Box
+              component="img"
               src={result.overlay_image}
               alt="Segmentation Overlay"
-              className="w-full rounded-lg border"
+              sx={{
+                width: '100%',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                mt: 2
+              }}
             />
-          </div>
+          </Paper>
 
           {result.statistics && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-bold mb-4">Statistics</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Liver Volume</p>
-                  <p className="text-2xl font-bold">{result.statistics.liver_volume_ml} ml</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Liver Percentage</p>
-                  <p className="text-2xl font-bold">{result.statistics.liver_percentage.toFixed(2)}%</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Liver Voxels</p>
-                  <p className="text-2xl font-bold">{result.statistics.liver_voxels.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Volume Shape</p>
-                  <p className="text-lg font-semibold">{result.statistics.volume_shape.join(' × ')}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Slice</p>
-                  <p className="text-lg font-semibold">
-                    {result.statistics.slice_index + 1} / {result.statistics.total_slices}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Modality</p>
-                  <p className="text-lg font-semibold">{result.statistics.modality}</p>
-                </div>
-              </div>
-            </div>
+            <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
+              <Typography variant="h5" component="h2" gutterBottom fontWeight="bold">
+                Statistics
+              </Typography>
+              <Grid container spacing={3} sx={{ mt: 1 }}>
+                <Grid item xs={6} sm={4}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">
+                        Liver Volume
+                      </Typography>
+                      <Typography variant="h5" fontWeight="bold">
+                        {result.statistics.liver_volume_ml} ml
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">
+                        Liver Percentage
+                      </Typography>
+                      <Typography variant="h5" fontWeight="bold">
+                        {result.statistics.liver_percentage.toFixed(2)}%
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">
+                        Liver Voxels
+                      </Typography>
+                      <Typography variant="h5" fontWeight="bold">
+                        {result.statistics.liver_voxels.toLocaleString()}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">
+                        Volume Shape
+                      </Typography>
+                      <Typography variant="h6" fontWeight="bold">
+                        {result.statistics.volume_shape.join(' × ')}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">
+                        Slice
+                      </Typography>
+                      <Typography variant="h6" fontWeight="bold">
+                        {result.statistics.slice_index + 1} / {result.statistics.total_slices}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">
+                        Modality
+                      </Typography>
+                      <Typography variant="h6" fontWeight="bold">
+                        {result.statistics.modality}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Paper>
           )}
 
           {result.medical_report && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">Medical Report</h2>
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getSeverityColor(result.medical_report.severity)}`}>
-                  {result.medical_report.severity.toUpperCase()}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-6">
+            <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h5" component="h2" fontWeight="bold">
+                  Medical Report
+                </Typography>
+                <Chip
+                  label={result.medical_report.severity.toUpperCase()}
+                  color={getSeverityColor(result.medical_report.severity) as any}
+                  size="medium"
+                />
+              </Stack>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
                 Study Date: {result.medical_report.study_date} | Modality: {result.medical_report.modality}
-              </p>
+              </Typography>
 
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Findings</h3>
-                  <ul className="list-disc list-inside space-y-1">
+              {!showReport ? (
+                <Box sx={{ mt: 3 }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Assessment />}
+                    onClick={handleGenerateReport}
+                    size="large"
+                  >
+                    Generate Report
+                  </Button>
+                </Box>
+              ) : (
+                <Box sx={{ mt: 3 }}>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="h6" gutterBottom fontWeight="bold">
+                    Findings
+                  </Typography>
+                  <List dense>
                     {result.medical_report.findings.map((finding, index) => (
-                      <li key={index} className="text-sm">{finding}</li>
+                      <ListItem key={index}>
+                        <ListItemText primary={finding} />
+                      </ListItem>
                     ))}
-                  </ul>
-                </div>
+                  </List>
 
-                <div>
-                  <h3 className="font-semibold mb-2">Measurements</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-gray-500">Liver Volume:</span>{' '}
-                      <span className="font-semibold">{result.medical_report.measurements.liver_volume_ml} ml</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Liver Percentage:</span>{' '}
-                      <span className="font-semibold">{result.medical_report.measurements.liver_percentage}%</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Fragmentation:</span>{' '}
-                      <span className="font-semibold">{result.medical_report.measurements.morphology.fragmentation}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Components:</span>{' '}
-                      <span className="font-semibold">{result.medical_report.measurements.morphology.connected_components}</span>
-                    </div>
-                  </div>
-                </div>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="h6" gutterBottom fontWeight="bold">
+                    Measurements
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Liver Volume:
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {result.medical_report.measurements.liver_volume_ml} ml
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Liver Percentage:
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {result.medical_report.measurements.liver_percentage}%
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Fragmentation:
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {result.medical_report.measurements.morphology.fragmentation}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Connected Components:
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {result.medical_report.measurements.morphology.connected_components}
+                      </Typography>
+                    </Grid>
+                  </Grid>
 
-                <div>
-                  <h3 className="font-semibold mb-2">Impression</h3>
-                  <p className="text-sm">{result.medical_report.impression}</p>
-                </div>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="h6" gutterBottom fontWeight="bold">
+                    Impression
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    {result.medical_report.impression}
+                  </Typography>
 
-                {result.medical_report.recommendations.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Recommendations</h3>
-                    <ul className="list-disc list-inside space-y-1">
-                      {result.medical_report.recommendations.map((rec, index) => (
-                        <li key={index} className="text-sm">{rec}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {result.medical_report.recommendations.length > 0 && (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="h6" gutterBottom fontWeight="bold">
+                        Recommendations
+                      </Typography>
+                      <List dense>
+                        {result.medical_report.recommendations.map((rec, index) => (
+                          <ListItem key={index}>
+                            <ListItemText primary={rec} />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </>
+                  )}
 
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md text-xs">
-                  {result.medical_report.disclaimer}
-                </div>
-              </div>
-            </div>
+                  <Alert severity="warning" sx={{ mt: 2 }}>
+                    {result.medical_report.disclaimer}
+                  </Alert>
+                </Box>
+              )}
+            </Paper>
           )}
 
           {result.segmentation_file && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <button
+            <Paper elevation={3} sx={{ p: 4 }}>
+              <Button
+                variant="contained"
+                color="success"
+                size="large"
+                fullWidth
                 onClick={handleDownload}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 flex items-center justify-center gap-2"
+                startIcon={<Download />}
+                sx={{ py: 1.5 }}
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
                 Download Segmentation Mask (.nii.gz)
-              </button>
-            </div>
+              </Button>
+            </Paper>
           )}
         </>
       )}
-    </div>
+    </Container>
   );
 }

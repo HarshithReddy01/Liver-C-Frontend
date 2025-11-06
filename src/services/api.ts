@@ -61,6 +61,26 @@ export async function segmentLiver(request: SegmentationRequest): Promise<Segmen
       body: formData,
     });
 
+    const contentType = response.headers.get('content-type');
+    
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      let errorMsg = `Server returned non-JSON response (${response.status})`;
+      
+      if (text.includes('Internal Server Error') || text.includes('500')) {
+        errorMsg = 'Internal server error. The model may be loading or there was an error processing your file. Please try again in a moment.';
+      } else if (text.includes('Method Not Allowed') || text.includes('405')) {
+        errorMsg = 'Method not allowed. Please check the API endpoint.';
+      } else if (text.length < 500) {
+        errorMsg = `Server error: ${text.substring(0, 200)}`;
+      }
+      
+      return {
+        success: false,
+        error: errorMsg,
+      };
+    }
+
     const data: SegmentationResponse = await response.json();
     
     if (!response.ok || !data.success) {
@@ -73,6 +93,12 @@ export async function segmentLiver(request: SegmentationRequest): Promise<Segmen
 
     return data;
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return {
+        success: false,
+        error: 'Server returned invalid JSON. The backend may be experiencing issues.',
+      };
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
